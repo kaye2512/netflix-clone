@@ -1,13 +1,13 @@
 import crypto from 'crypto';
 import User from '../models/user.model.js';
 import { ENV_VARS } from '../config/env.config.js';
-import { generateTokenAndSetCookie, generateVerificationToken } from '../helpers/helper.js';
-import {
-  sendVerificationEmail,
-  sendWelcomeEmail,
-  sendPasswordResetEmail,
-  sendPasswordResetSuccessEmail,
-} from '../services/mailtrap.service.js';
+import { generateTokenAndSetCookie/*, generateVerificationToken*/ } from '../helpers/helper.js';
+// import {
+//   sendVerificationEmail,
+//   sendWelcomeEmail,
+//   sendPasswordResetEmail,
+//   sendPasswordResetSuccessEmail,
+// } from '../services/mailtrap.service.js';
 
 /**
  * Handles the signup request by validating user input, checking for existing users,
@@ -47,16 +47,17 @@ export const signup = async (req, res) => {
     }
 
     // generate the token for email verification
-    const verificationToken = generateVerificationToken();
-    await sendVerificationEmail(email, verificationToken);
+    // const verificationToken = generateVerificationToken();
+    // await sendVerificationEmail(email, verificationToken);
 
     // create new user and save to database
     const newUser = new User({
       username,
       email,
       password,
-      verificationToken,
-      verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+      isVerified: true, // auto-verified (email verification disabled)
+      // verificationToken,
+      // verificationExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
     await newUser.save();
 
@@ -166,7 +167,7 @@ export const verifyEmail = async (req, res) => {
     await user.save();
 
     // send welcome email to the user, and send success message
-    await sendWelcomeEmail(user.email, user.username);
+    // await sendWelcomeEmail(user.email, user.username);
     res.status(200).json({
       status: 'success',
       message: 'Account verified successfully',
@@ -201,7 +202,7 @@ export const forgotPassword = async (req, res) => {
     // send password reset link to the user via email, and send success message
     const resetPasswordUrl = `${ENV_VARS.CLIENT_URL}/reset/password/${resetToken}`;
 
-    await sendPasswordResetEmail(user.email, resetPasswordUrl);
+    // await sendPasswordResetEmail(user.email, resetPasswordUrl);
 
     res.status(200).json({ success: true, message: 'Password reset link sent' });
   } catch (error) {
@@ -241,7 +242,7 @@ export const resetPassword = async (req, res) => {
     await user.save();
 
     // send password reset success email to the user, and send success message
-    await sendPasswordResetSuccessEmail(user.email);
+    // await sendPasswordResetSuccessEmail(user.email);
     res.status(200).json({ success: true, message: 'Password reset successfully' });
   } catch (error) {
     // log error and return error message in response

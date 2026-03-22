@@ -27,7 +27,7 @@ export const mailtrapClient = new MailtrapClient(config);
  * console.log(SENDER.name); // 'Netflix Clone'
  */
 export const SENDER = {
-  email: 'netflixclone@demomailtrap.com',
+  email: 'kayeromuald@gmail.com',
   name: 'Netflix Clone',
 };
 
@@ -47,10 +47,10 @@ export const SENDER = {
  * console.log(EMAIL_TEMPLATE_IDS.reset_password_email); // '005b8a30-c0ad-4d15-9440-bccbc01c9ecd'
  */
 export const EMAIL_TEMPLATE_IDS = {
-  verification_email: '8168646a-586c-4e1e-a0c9-087bb1b46665',
-  welcome_email: '00eecab8-06f1-42fa-a67c-45e7bd7a3d42',
-  reset_password_email: '005b8a30-c0ad-4d15-9440-bccbc01c9ecd',
-  reset_password_confirmation_email: '3b1e23ae-e0a6-44ff-ac63-3970bca6e2e7',
+  verification_email: 'c1a12ad3-71b7-4a9d-9769-a4b973ca4d75',
+  welcome_email: '93625770-b523-4e50-af2a-10ee629cc3cf',
+  reset_password_email: 'fb9b357a-a38b-4a6d-857b-e15e69ba4b1f',
+  reset_password_confirmation_email: '4e2a27dd-2c04-4c2f-b4b8-ae6b315a425b',
 };
 
 /**
