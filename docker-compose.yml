@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: netflix-clone
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
+    environment:
+      NODE_ENV: production
+      MONGO_URI: ${MONGO_URI}
+      SERVER_PORT: ${SERVER_PORT:-8000}
+      CLIENT_URL: ${CLIENT_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      MAILTRAP_TOKEN: ${MAILTRAP_TOKEN}
+      MAILTRAP_ENDPOINT: ${MAILTRAP_ENDPOINT}
+    # .env file is NOT committed to git — manage via Jenkins credentials
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
