@@ -51,10 +51,11 @@ pipeline {
 
 
         stage('push to ECR') {
-            withCredentials([
-                aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                 credentialsId: 'jk-aws-credentials',
-                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
+            steps {
+                withCredentials([
+                    aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    credentialsId: 'jk-aws-credentials',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
             ]) {
                 sh '''
                     # Login ECR une seule fois
@@ -81,6 +82,8 @@ pipeline {
                     docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest                   
                 '''
             }
+            }
+           
         }
     }
 
