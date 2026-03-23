@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        AWS_REGION     = credentials('eu-west-3')
+        
         ECR_REPO_BACKEND       = 'netflix-clone-backend'
         ECR_REPO_FRONTEND       = 'netflix-clone-frontend'
     }
@@ -60,9 +60,9 @@ pipeline {
                 sh '''
                     # Login ECR une seule fois
                     ECR_REGISTRY=$(aws sts get-caller-identity \
-                    --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com
+                    --query Account --output text).dkr.ecr.eu-west-3.amazonaws.com
 
-                    aws ecr get-login-password --region $AWS_REGION \
+                    aws ecr get-login-password --region eu-west-3 \
                     | docker login --username AWS --password-stdin $ECR_REGISTRY
 
                     # Build backend
