@@ -1,9 +1,17 @@
 pipeline {
     agent {
         docker {
-            image 'node:20-alpine'
+            image 'kayeromuald/node-agent:v1'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
+    }
+
+    environment {
+        AWS_REGION     = credentials('eu-west-3')
+        AWS_ACCOUNT_ID = credentials('jk-aws-credentials')
+        ECR_REPO       = 'netflix-clone'
+        ECR_REGISTRY   = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_TAG      = "${ECR_REGISTRY}/${ECR_REPO}:${BUILD_NUMBER}"
     }
 
     options {
