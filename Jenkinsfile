@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'kayeromuald/node-agent:v3'   // v2 avec bun
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
+            args '-v /var/run/docker.sock:/var/run/docker.sock --network host'
         }
     }
     environment {
@@ -12,7 +12,7 @@ pipeline {
     }
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 10, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
     stages {
@@ -29,7 +29,7 @@ pipeline {
         stage('Build backend') {
             steps {
                 dir('backend') {
-                    sh 'npm install'
+                    sh 'npm install --fetch-timeout=30000'
                     sh 'npm run build'
                 }
             }
@@ -38,7 +38,7 @@ pipeline {
         stage('Build frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm install'
+                    sh 'npm install --fetch-timeout=30000'
                     sh 'npm run build'
                 }
             }
