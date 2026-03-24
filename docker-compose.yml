@@ -14,6 +14,7 @@ services:
       TMDB_API_KEY: ${TMDB_API_KEY}
       MAILTRAP_TOKEN: ${MAILTRAP_TOKEN}
       MAILTRAP_ENDPOINT: ${MAILTRAP_ENDPOINT}
+      HTTPS: ${HTTPS:-false}
     networks:
       - app-network
     healthcheck:
@@ -31,9 +32,12 @@ services:
   frontend:
     image: ${ECR_REGISTRY}/netflix-clone-frontend:${IMAGE_TAG:-latest}
     container_name: netflix-frontend
-    restart: unless-stopped
+    restart:
+      unless-stopped
+      # Override du CMD pour forcer allowedHosts
+    command: ['bun', 'run', 'preview', '--', '--host', '0.0.0.0', '--port', '5173', '--strictPort']
     expose:
-      - '5173' # exposé uniquement en interne, nginx s'en charge
+      - '5173'
     networks:
       - app-network
     depends_on:

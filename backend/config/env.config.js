@@ -43,4 +43,7 @@ export const ENV_VARS = {
   // Mailtrap SMTP configuration
   MAILTRAP_TOKEN: process.env.MAILTRAP_TOKEN,
   MAILTRAP_ENDPOINT: process.env.MAILTRAP_ENDPOINT,
+
+  // HTTPS configuration
+  HTTPS: process.env.HTTPS || 'false',
 };

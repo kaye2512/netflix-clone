@@ -86,7 +86,7 @@ export const generateTokenAndSetCookie = (payload, res) => {
   let options = {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     httpOnly: true, // secure cookie only accessible via HTTP, prevent XSS attacks cross-site scripting attacks, make it not be accessed by JS
-    secure: ENV_VARS.NODE_ENV === 'production', // secure cookie only accessible over HTTPS (default is development)
+    secure: ENV_VARS.NODE_ENV === 'production' && ENV_VARS.HTTPS === 'true', // secure cookie only accessible over HTTPS (default is development)
     sameSite: 'strict', // prevent CSRF attacks cross-site request forgery attacks
   };
   res.cookie('netflixToken', token, options);
