@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'kayeromuald/node-agent:v1'
+            image 'kayeromuald/node-agent:v2'   // v2 avec bun
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
@@ -19,24 +19,18 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                // Vérifier la structure du repo
                 sh '''
-                    echo "=== Structure du repo ==="
-                    ls -la
-                    echo "=== Contenu backend ==="
-                    ls -la backend/
-                    echo "=== Contenu frontend ==="
-                    ls -la frontend/
-                    echo "Node: $(node --version) | npm: $(npm --version)"
+                    echo "Node: $(node --version)"
+                    echo "Bun:  $(bun --version)"
                 '''
             }
         }
 
         stage('Build backend') {
             steps {
-                dir('backend') {       // méthode Jenkins recommandée
-                    sh 'npm ci'        // sans --silent pour voir les erreurs
-                    sh 'npm run build'
+                dir('backend') {
+                    sh 'bun install'
+                    sh 'bun run build'
                 }
             }
         }
@@ -44,8 +38,8 @@ pipeline {
         stage('Build frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm ci'
-                    sh 'npm run build'
+                    sh 'bun install'
+                    sh 'bun run build'
                 }
             }
         }
