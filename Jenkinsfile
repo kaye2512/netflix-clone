@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'kayeromuald/node-agent:v3'   // v2 avec bun
+            image 'kayeromuald/bun-agent:v1'   // v2 avec bun
             args '-v /var/run/docker.sock:/var/run/docker.sock --network host'
         }
     }
@@ -30,8 +30,8 @@ pipeline {
             steps {
                 dir('backend') {
                     sh 'rm -rf node_modules'
-                    sh 'npm install'
-                    sh 'node --check index.js'
+                    sh 'bun install'
+                    sh 'bun run build'
                 }
             }
         }
@@ -40,8 +40,8 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh 'rm -rf node_modules'
-                    sh 'npm install'
-                    sh 'npm run build'
+                    sh 'bun install'
+                    sh 'bun run build'
                 }
             }
         }
