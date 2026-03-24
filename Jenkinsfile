@@ -59,7 +59,7 @@ pipeline {
                         aws ecr get-login-password --region eu-west-3 \
                             | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-                        docker build -t ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}  ./backend
+                        docker build --target production \ -t ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}  ./backend
                         docker build -t ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} ./frontend
 
                         docker tag ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}  \

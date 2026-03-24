@@ -114,21 +114,3 @@ EXPOSE 8000
 
 # Start production server
 CMD ["bun", "run", "start"]
-
-# ========================================
-# Test Stage
-# ========================================
-FROM build-deps AS test
-
-# Set environment
-ENV NODE_ENV=test \
-    CI=true
-
-# Copy source files
-COPY --chown=nodejs:nodejs . .
-
-# Switch to non-root user
-USER nodejs
-
-# Run tests with coverage
-CMD ["bun", "run", "test:coverage"]
