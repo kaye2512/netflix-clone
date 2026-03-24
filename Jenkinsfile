@@ -29,8 +29,8 @@ pipeline {
         stage('Build backend') {
             steps {
                 dir('backend') {
-                    sh 'bun install'
-                    sh 'bun run build'
+                    sh 'npm install'
+                    sh 'npm run build'
                 }
             }
         }
@@ -38,8 +38,8 @@ pipeline {
         stage('Build frontend') {
             steps {
                 dir('frontend') {
-                    sh 'bun install'
-                    sh 'bun run build'
+                    sh 'npm install'
+                    sh 'npm run build'
                 }
             }
         }
