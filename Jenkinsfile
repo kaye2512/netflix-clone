@@ -75,7 +75,6 @@ pipeline {
                 }
             }
         }
-    }
 
         stage('Deploy to VPS') {
             steps {
@@ -115,6 +114,8 @@ pipeline {
                 }
             }
         }
+    }
+
 
     post {
         always  { sh 'docker logout || true' }
