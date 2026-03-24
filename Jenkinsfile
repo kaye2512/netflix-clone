@@ -29,7 +29,7 @@ pipeline {
         stage('Build backend') {
             steps {
                 dir('backend') {
-                    sh 'npm install --fetch-timeout=30000'
+                    sh 'npm ci'
                     sh 'npm run build'
                 }
             }
@@ -38,7 +38,7 @@ pipeline {
         stage('Build frontend') {
             steps {
                 dir('frontend') {
-                    sh 'npm install --fetch-timeout=30000'
+                    sh 'npm ci'
                     sh 'npm run build'
                 }
             }
