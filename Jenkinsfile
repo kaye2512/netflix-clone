@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'kayeromuald/node-agent:v2'   // v2 avec bun
+            image 'kayeromuald/node-agent:v3'   // v2 avec bun
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
@@ -21,7 +21,6 @@ pipeline {
                 checkout scm
                 sh '''
                     echo "Node: $(node --version)"
-                    echo "Bun:  $(bun --version)"
                 '''
             }
         }
