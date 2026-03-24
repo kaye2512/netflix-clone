@@ -1,10 +1,9 @@
 # ========================================
 # Optimized Multi-Stage Dockerfile
-# Node.js TypeScript Application
+# Node.js Application (Bun runtime)
 # ========================================
 
-ARG NODE_VERSION=24.11.1-alpine
-FROM node:${NODE_VERSION} AS base
+FROM oven/bun:1-alpine AS base
 
 # Set working directory
 WORKDIR /app
@@ -20,12 +19,11 @@ RUN addgroup -g 1001 -S nodejs && \
 FROM base AS deps
 
 # Copy package files
-COPY package*.json ./
+COPY package.json bun.lock ./
 
 # Install production dependencies
-RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm ci --omit=dev && \
-    npm cache clean --force
+RUN --mount=type=cache,target=/root/.bun,sharing=locked \
+    bun install --frozen-lockfile --production
 
 # Set proper ownership
 RUN chown -R nodejs:nodejs /app
@@ -36,12 +34,11 @@ RUN chown -R nodejs:nodejs /app
 FROM base AS build-deps
 
 # Copy package files
-COPY package*.json ./
+COPY package.json bun.lock ./
 
-# Install all dependencies with build optimizations
-RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm ci --no-audit --no-fund && \
-    npm cache clean --force
+# Install all dependencies
+RUN --mount=type=cache,target=/root/.bun,sharing=locked \
+    bun install --frozen-lockfile
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/node_modules/.vite && \
@@ -56,7 +53,7 @@ FROM build-deps AS build
 COPY --chown=nodejs:nodejs . .
 
 # Build the application
-RUN npm run build
+RUN bun run build
 
 # Set proper ownership
 RUN chown -R nodejs:nodejs /app
@@ -67,8 +64,7 @@ RUN chown -R nodejs:nodejs /app
 FROM build-deps AS development
 
 # Set environment
-ENV NODE_ENV=development \
-    NPM_CONFIG_LOGLEVEL=warn
+ENV NODE_ENV=development
 
 # Copy source files
 COPY . .
@@ -85,13 +81,12 @@ USER nodejs
 EXPOSE 8000
 
 # Start development server
-CMD ["npm", "run", "dev:docker"]
+CMD ["bun", "run", "dev:docker"]
 
 # ========================================
 # Production Stage
 # ========================================
-ARG NODE_VERSION=24.11.1-alpine
-FROM node:${NODE_VERSION} AS production
+FROM oven/bun:1-alpine AS production
 
 # Set working directory
 WORKDIR /app
@@ -103,14 +98,13 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Set optimized environment variables
 ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=256 --no-warnings" \
-    NPM_CONFIG_LOGLEVEL=silent
+    NODE_OPTIONS="--max-old-space-size=256 --no-warnings"
 
 # Copy production dependencies from deps stage
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=deps --chown=nodejs:nodejs /app/package*.json ./
-# Copy built application from build stage
-COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=deps --chown=nodejs:nodejs /app/package.json ./
+# Copy application source from build stage
+COPY --from=build --chown=nodejs:nodejs /app/index.js ./
 
 # Switch to non-root user for security
 USER nodejs
@@ -119,7 +113,7 @@ USER nodejs
 EXPOSE 8000
 
 # Start production server
-CMD ["node", "dist/server.js"]
+CMD ["bun", "run", "start"]
 
 # ========================================
 # Test Stage
@@ -137,4 +131,4 @@ COPY --chown=nodejs:nodejs . .
 USER nodejs
 
 # Run tests with coverage
-CMD ["npm", "run", "test:coverage"]
+CMD ["bun", "run", "test:coverage"]
