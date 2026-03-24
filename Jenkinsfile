@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'kayeromuald/bun-agent:v1'   // v2 avec bun
-            args '-v /var/run/docker.sock:/var/run/docker.sock --network host'
+            args '--user root -v /var/run/docker.sock:/var/run/docker.sock -e HOME=/root'
         }
     }
     environment {
