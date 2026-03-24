@@ -20,6 +20,6 @@ RUN bun run build
 FROM dependencies-env
 COPY ./package.json bun.lock /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
+COPY --from=build-env /app/dist /app/dist
 WORKDIR /app
-CMD ["bun", "run", "start"]
+CMD ["bun", "run", "preview", "--", "--host", "0.0.0.0"]
