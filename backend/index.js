@@ -9,7 +9,7 @@ import { connectDB } from './config/db.config.js';
  * Determines the number of available CPU cores on the system, or defaults to 3 if the number of CPUs cannot be determined.
  * This value is used to create a cluster of worker processes to run the application.
  */
-const totalCPUs = os.cpus().length;
+let totalCPUs = os.cpus().length;
 
 if (!totalCPUs) {
   totalCPUs = 3;
