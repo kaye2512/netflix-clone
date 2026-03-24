@@ -45,20 +45,6 @@ RUN mkdir -p /app/node_modules/.vite && \
     chown -R nodejs:nodejs /app
 
 # ========================================
-# Build Stage
-# ========================================
-FROM build-deps AS build
-
-# Copy only necessary files for building (respects .dockerignore)
-COPY --chown=nodejs:nodejs . .
-
-# Build the application
-RUN bun run build
-
-# Set proper ownership
-RUN chown -R nodejs:nodejs /app
-
-# ========================================
 # Development Stage
 # ========================================
 FROM build-deps AS development
