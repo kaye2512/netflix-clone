@@ -8,6 +8,7 @@ pipeline {
     environment {
         ECR_REPO_BACKEND  = 'netflix-clone-backend'
         ECR_REPO_FRONTEND = 'netflix-clone-frontend'
+        npm_config_cache  = '/tmp/.npm'
     }
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
