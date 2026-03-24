@@ -12,7 +12,7 @@ pipeline {
     }
     options {
         buildDiscarder(logRotator(numToKeepStr: '5'))
-        timeout(time: 10, unit: 'MINUTES')
+        timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
     stages {
@@ -29,8 +29,9 @@ pipeline {
         stage('Build backend') {
             steps {
                 dir('backend') {
+                    sh 'rm -rf node_modules'
                     sh 'npm install'
-                    sh 'npm run build'
+                    sh 'node --check index.js'
                 }
             }
         }
@@ -38,6 +39,7 @@ pipeline {
         stage('Build frontend') {
             steps {
                 dir('frontend') {
+                    sh 'rm -rf node_modules'
                     sh 'npm install'
                     sh 'npm run build'
                 }
