@@ -77,6 +77,45 @@ pipeline {
         }
     }
 
+        stage('Deploy to VPS') {
+            steps {
+                withCredentials([
+                    aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId:     'jk-aws-credentials',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'),
+                    sshUserPrivateKey(credentialsId: 'vps-ssh-key',
+                                      keyFileVariable: 'SSH_KEY',
+                                      usernameVariable: 'SSH_USER'),
+                    string(credentialsId: 'vps-host', variable: 'VPS_HOST')
+                ]) {
+                    sh '''
+                        ECR_REGISTRY=$(aws sts get-caller-identity \
+                            --query Account --output text).dkr.ecr.eu-west-3.amazonaws.com
+
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@$VPS_HOST "
+                            # Login ECR
+                            aws ecr get-login-password --region eu-west-3 \
+                                | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+                            # Pull latest images
+                            docker pull ${ECR_REGISTRY}/netflix-clone-backend:${BUILD_NUMBER}
+                            docker pull ${ECR_REGISTRY}/netflix-clone-frontend:${BUILD_NUMBER}
+
+                            # Update compose and restart
+                            cd /opt/netflix-clone
+                            export ECR_REGISTRY=${ECR_REGISTRY}
+                            export IMAGE_TAG=${BUILD_NUMBER}
+                            docker compose pull
+                            docker compose up -d --remove-orphans
+
+                            # Cleanup old images
+                            docker image prune -f
+                        "
+                    '''
+                }
+            }
+        }
+
     post {
         always  { sh 'docker logout || true' }
         success { echo "Build #${BUILD_NUMBER} — images pushees avec succes" }
