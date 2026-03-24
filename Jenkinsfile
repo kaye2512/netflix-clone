@@ -41,7 +41,6 @@ pipeline {
                 dir('frontend') {
                     sh 'rm -rf node_modules'
                     sh 'bun install'
-                    sh 'bun run build'
                 }
             }
         }

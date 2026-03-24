@@ -1,46 +1,25 @@
-# =========================================
-# Stage 1: Build the React.js Application
-# =========================================
-ARG NODE_VERSION=24.12.0-alpine
-ARG NGINX_VERSION=alpine3.22
+FROM oven/bun:1 AS dependencies-env
+COPY . /app
 
-# Use a lightweight Node.js image for building (customizable via ARG)
-FROM node:${NODE_VERSION} AS builder
-
-# Set the working directory inside the container
+FROM dependencies-env AS development-dependencies-env
+COPY ./package.json bun.lock /app/
 WORKDIR /app
+RUN bun i --frozen-lockfile
 
-# Copy package-related files first to leverage Docker's caching mechanism
-COPY package.json package-lock.json* ./
+FROM dependencies-env AS production-dependencies-env
+COPY ./package.json bun.lock /app/
+WORKDIR /app
+RUN bun i --production
 
-# Install project dependencies using npm ci (ensures a clean, reproducible install)
-RUN --mount=type=cache,target=/root/.npm npm ci
+FROM dependencies-env AS build-env
+COPY ./package.json bun.lock /app/
+COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+WORKDIR /app
+RUN bun run build
 
-# Copy the rest of the application source code into the container
-COPY . .
-
-# Build the React.js application (outputs to /app/dist)
-RUN npm run build
-
-# =========================================
-# Stage 2: Prepare Nginx to Serve Static Files
-# =========================================
-
-FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
-
-# Copy custom Nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy the static build output from the build stage to Nginx's default HTML serving directory
-COPY --chown=nginx:nginx --from=builder /app/dist /usr/share/nginx/html
-
-# Use a built-in non-root user for security best practices
-USER nginx
-
-# Expose port 8080 to allow HTTP traffic
-# Note: The default NGINX container now listens on port 8080 instead of 80
-EXPOSE 3000
-
-# Start Nginx directly with custom config
-ENTRYPOINT ["nginx", "-c", "/etc/nginx/nginx.conf"]
-CMD ["-g", "daemon off;"]
+FROM dependencies-env
+COPY ./package.json bun.lock /app/
+COPY --from=production-dependencies-env /app/node_modules /app/node_modules
+COPY --from=build-env /app/build /app/build
+WORKDIR /app
+CMD ["bun", "run", "start"]
