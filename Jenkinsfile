@@ -29,7 +29,7 @@ pipeline {
         stage('Build backend') {
             steps {
                 dir('backend') {
-                    sh 'rm -rf node_modules && npm install'
+                    sh 'npm ci'
                     sh 'npm run build'
                 }
             }
@@ -38,7 +38,7 @@ pipeline {
         stage('Build frontend') {
             steps {
                 dir('frontend') {
-                    sh 'rm -rf node_modules && npm install'
+                    sh 'npm ci'
                     sh 'npm run build'
                 }
             }
