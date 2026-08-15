@@ -1,0 +1,91 @@
+services:
+  backend:
+    image: ${ECR_REGISTRY}/netflix-clone-backend:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: 8000
+      CLIENT_URL: ${CLIENT_URL}
+      HTTPS: "false"
+      # secrets montés en fichiers -> voir la note plus bas
+      MONGO_URI_FILE: /run/secrets/mongo_uri
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      TMDB_API_KEY_FILE: /run/secrets/tmdb_api_key
+      MAILTRAP_TOKEN_FILE: /run/secrets/mailtrap_token
+    secrets:
+      - mongo_uri
+      - jwt_secret
+      - tmdb_api_key
+      - mailtrap_token
+    networks: [app-network]
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8000/api/v1/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints: [node.role == worker]
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  frontend:
+    image: ${ECR_REGISTRY}/netflix-clone-frontend:${IMAGE_TAG:-latest}
+    command: ['bun','run','preview','--','--host','0.0.0.0','--port','5173','--strictPort']
+    networks: [app-network]
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints: [node.role == worker]
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
+    networks: [app-network]
+    deploy:
+      mode: replicated
+      replicas: 2
+      placement:
+        constraints: [node.role == worker]
+      restart_policy:
+        condition: on-failure
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  app-network:
+    driver: overlay
+
+secrets:
+  mongo_uri:      { external: true }
+  jwt_secret:     { external: true }
+  tmdb_api_key:   { external: true }
+  mailtrap_token: { external: true }
+
+
+configs:
+  nginx_conf:
+    external: true

@@ -1,5 +1,6 @@
 import path from 'path';
 import dotenv from 'dotenv';
+import { secret } from '../utils/secret.js';
 
 /**
  * This function loads environment variables from a .env file located at the specified path.
@@ -46,4 +47,9 @@ export const ENV_VARS = {
 
   // HTTPS configuration
   HTTPS: process.env.HTTPS || 'false',
+   // Sensibles : via docker secret (avec repli env)
+  MONGO_URI: secret('MONGO_URI'),
+  JWT_SECRET: secret('JWT_SECRET'),
+  TMDB_API_KEY: secret('TMDB_API_KEY'),
+  MAILTRAP_TOKEN: secret('MAILTRAP_TOKEN'),
 };

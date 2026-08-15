@@ -1,12 +1,14 @@
 services:
   backend:
-    image: ${ECR_REGISTRY}/netflix-clone-backend:${IMAGE_TAG:-latest}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: netflix-backend
     restart: unless-stopped
     expose:
       - '8000'
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       MONGO_URI: ${MONGO_URI}
       SERVER_PORT: 8000
       CLIENT_URL: ${CLIENT_URL}
@@ -30,7 +32,9 @@ services:
         max-file: '3'
 
   frontend:
-    image: ${ECR_REGISTRY}/netflix-clone-frontend:${IMAGE_TAG:-latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: netflix-frontend
     restart:
       unless-stopped
@@ -68,7 +72,7 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
-
+   
 networks:
   app-network:
     driver: bridge
