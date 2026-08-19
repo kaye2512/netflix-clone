@@ -41,6 +41,37 @@ pipeline {
                 }
             }
         }
+        stage('Push to ECR') {
+            steps {
+                withCredentials([
+                    aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        credentialsId:     'jk-aws-credentials',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        ECR_REGISTRY=$(aws sts get-caller-identity \
+                            --query Account --output text).dkr.ecr.eu-west-3.amazonaws.com
+
+                        aws ecr get-login-password --region eu-west-3 \
+                            | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+                        docker build --target production \
+                    -t ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER} ./backend
+                        docker build -t ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} ./frontend
+
+                        docker tag ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}  \
+                                   ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:latest
+                        docker tag ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} \
+                                   ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest
+
+                        docker push ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}
+                        docker push ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:latest
+                        docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER}
+                        docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest
+                    '''
+                }
+            }
+        }
     }  
 
     post {
