@@ -83,7 +83,7 @@ pipeline {
     }
     post {
         always  { node('built-in') { sh 'docker logout || true' } }
-        success { echo "Build #${BUILD_NUMBER} deploy succeeded" }
+        success { echo "Build #${BUILD_NUMBER} deploy succeeded everything up to this point." }
         failure { echo "Build #${BUILD_NUMBER} failed" }
     }
 }
