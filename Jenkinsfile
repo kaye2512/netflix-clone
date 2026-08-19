@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'kayeromuald/bun-agent:v1'   // v2 avec bun
-            args '--user root -v /var/run/docker.sock:/var/run/docker.sock -e HOME=/root'
-        }
-    }
+    agent none
     environment {
         ECR_REPO_BACKEND  = 'netflix-clone-backend'
         ECR_REPO_FRONTEND = 'netflix-clone-frontend'
@@ -14,115 +9,81 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '5'))
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
+        skipDefaultCheckout(true)
     }
     stages {
-
-        stage('Checkout') {
+        stage('CI - Build & Push') {
+            agent {
+                docker {
+                    image 'kayeromuald/bun-agent:v1'
+                    args '--user root -v /var/run/docker.sock:/var/run/docker.sock -e HOME=/root'
+                    label 'built-in'
+                }
+            }
+            stages {
+                stage('Checkout') {
+                    steps {
+                        checkout scm
+                        sh 'echo "Node: $(node --version)"'
+                    }
+                }
+                stage('Build backend') {
+                    steps {
+                        dir('backend') {
+                            sh 'rm -rf node_modules'
+                            sh 'bun install'
+                            sh 'bun run build'
+                        }
+                    }
+                }
+                stage('Build frontend') {
+                    steps {
+                        dir('frontend') {
+                            sh 'rm -rf node_modules'
+                            sh 'bun install'
+                        }
+                    }
+                }
+                stage('Push to ECR') {
+                    steps {
+                        withCredentials([
+                            aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                credentialsId:     'jk-aws-credentials',
+                                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
+                        ]) {
+                            sh '''
+                                ECR_REGISTRY=$(aws sts get-caller-identity \
+                                    --query Account --output text).dkr.ecr.eu-west-3.amazonaws.com
+                                aws ecr get-login-password --region eu-west-3 \
+                                    | docker login --username AWS --password-stdin $ECR_REGISTRY
+                                docker build --target production \
+                                    -t ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER} ./backend
+                                docker build -t ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} ./frontend
+                                docker tag ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}  ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:latest
+                                docker tag ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest
+                                docker push ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}
+                                docker push ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:latest
+                                docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER}
+                                docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+        stage('CD - Deploy') {
+            agent { label 'ansible-deploy' }
             steps {
-                checkout scm
                 sh '''
-                    echo "Node: $(node --version)"
+                    cd /home/ansible/ansible/webapp
+                    ansible-playbook playbooks/deploy.yml -e "image_tag=${BUILD_NUMBER}"
                 '''
             }
         }
-
-        stage('Build backend') {
-            steps {
-                dir('backend') {
-                    sh 'rm -rf node_modules'
-                    sh 'bun install'
-                    sh 'bun run build'
-                }
-            }
-        }
-
-        stage('Build frontend') {
-            steps {
-                dir('frontend') {
-                    sh 'rm -rf node_modules'
-                    sh 'bun install'
-                }
-            }
-        }
-
-        stage('Push to ECR') {
-            steps {
-                withCredentials([
-                    aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        credentialsId:     'jk-aws-credentials',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh '''
-                        ECR_REGISTRY=$(aws sts get-caller-identity \
-                            --query Account --output text).dkr.ecr.eu-west-3.amazonaws.com
-
-                        aws ecr get-login-password --region eu-west-3 \
-                            | docker login --username AWS --password-stdin $ECR_REGISTRY
-
-                        docker build --target production \
-                    -t ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER} ./backend
-                        docker build -t ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} ./frontend
-
-                        docker tag ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}  \
-                                   ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:latest
-                        docker tag ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER} \
-                                   ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest
-
-                        docker push ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:${BUILD_NUMBER}
-                        docker push ${ECR_REGISTRY}/${ECR_REPO_BACKEND}:latest
-                        docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:${BUILD_NUMBER}
-                        docker push ${ECR_REGISTRY}/${ECR_REPO_FRONTEND}:latest
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                withCredentials([
-                    aws(accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        credentialsId:     'jk-aws-credentials',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'),
-                    sshUserPrivateKey(credentialsId: 'vps-ssh-key',
-                                    keyFileVariable:  'SSH_KEY',
-                                    usernameVariable: 'SSH_USER'),
-                    string(credentialsId: 'vps-host', variable: 'VPS_HOST')
-                ]) {
-                    sh '''
-                        ECR_REGISTRY=$(aws sts get-caller-identity \
-                            --query Account --output text).dkr.ecr.eu-west-3.amazonaws.com
-
-                        # Créer le dossier sur le VPS si inexistant
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@$VPS_HOST \
-                            "mkdir -p /opt/netflix-clone"
-
-                        # Copier le docker-compose.yml depuis le repo vers le VPS
-                        scp -i $SSH_KEY -o StrictHostKeyChecking=no \
-                            docker-compose.yml $SSH_USER@$VPS_HOST:/opt/netflix-clone/docker-compose.yml
-
-                        # Déployer
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@$VPS_HOST "
-                            cd /opt/netflix-clone
-                            export ECR_REGISTRY=${ECR_REGISTRY}
-                            export IMAGE_TAG=${BUILD_NUMBER}
-
-                            aws ecr get-login-password --region eu-west-3 \
-                                | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-
-                            docker compose pull
-                            docker compose up -d --remove-orphans
-                            docker image prune -f
-                        "
-                    '''
-                }
-            }
-        }
     }
-
-
     post {
-        always  { sh 'docker logout || true' }
-        success { echo "Build #${BUILD_NUMBER} — images pushees avec succes" }
-        failure { echo "Build #${BUILD_NUMBER} — pipeline en echec" }
+        always  { node('built-in') { sh 'docker logout || true' } }
+        success { echo "Build #${BUILD_NUMBER} deploy succeeded" }
+        failure { echo "Build #${BUILD_NUMBER} failed" }
     }
 }
