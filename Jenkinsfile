@@ -35,7 +35,7 @@ pipeline {
                 }
             }
         }
-    }
+
         stage('Build frontend') {
             steps {
                 dir('frontend') {
@@ -44,8 +44,7 @@ pipeline {
                 }
             }
         }
-
-        
+    } 
 
     post {
         always  { sh 'docker logout || true' }
