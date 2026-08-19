@@ -84,8 +84,8 @@ pipeline {
         }
     }  
     post {
-        always  { sh 'docker logout || true' }
-        success { echo "Build #${BUILD_NUMBER} — images pushees avec succes" }
-        failure { echo "Build #${BUILD_NUMBER} — pipeline en echec" }
+        always  { node('built-in') { sh 'docker logout || true' } }
+        success { echo "Build #${BUILD_NUMBER} success deploy" }
+        failure { echo "Build #${BUILD_NUMBER} failed" }
     }
 }
