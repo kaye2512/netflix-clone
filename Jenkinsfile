@@ -35,7 +35,7 @@ pipeline {
                 }
             }
         }
-
+    }
         stage('Build frontend') {
             steps {
                 dir('frontend') {
