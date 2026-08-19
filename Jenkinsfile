@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'kayeromuald/bun-agent:v1'   // v2 avec bun
+            image 'kayeromuald/bun-agent:v1'
             args '--user root -v /var/run/docker.sock:/var/run/docker.sock -e HOME=/root'
         }
     }
@@ -16,7 +16,6 @@ pipeline {
         disableConcurrentBuilds()
     }
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -25,7 +24,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Build backend') {
             steps {
                 dir('backend') {
@@ -35,7 +33,6 @@ pipeline {
                 }
             }
         }
-
         stage('Build frontend') {
             steps {
                 dir('frontend') {
@@ -44,7 +41,7 @@ pipeline {
                 }
             }
         }
-    } 
+    }  
 
     post {
         always  { sh 'docker logout || true' }
